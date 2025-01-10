@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bookmark Manager</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    [data-theme='light'] {
+      background-color: #f5e4d3;
+      color: #3e2c2a;
+    }
+
+    [data-theme='dark'] {
+      background-color: #3e2c2a;
+      color: #f4e5d3;
+    }
+
+    [data-theme='dark'] #themeToggleBtn, [data-theme='dark'] #addBookmarkBtn, [data-theme='dark'] #modal button {
+      background-color: #2b1f1d;
+      color: #f4e5d3;
+    }
+
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: #f9f9f9;
+      min-width: 120px;
+      box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+      z-index: 1;
+    }
+
+    .dropdown:hover .dropdown-content {
+      display: block;
+    }
+
+    .dropdown-content button {
+      color: black;
+      padding: 8px 16px;
+      text-decoration: none;
+      display: block;
+      width: 100%;
+      text-align: left;
+    }
+
+    .dropdown-content button:hover {
+      background-color: #f1f1f1;
+    }
+  </style>
+</head>
+<body class="min-h-screen p-4" data-theme="light">
+  <div class="max-w-4xl mx-auto">
+    <header class="flex items-center justify-between mb-4">
+      <h1 class="text-xl font-bold md:text-2xl">Bookmark Manager</h1>
+      <div class="flex space-x-2 md:space-x-4">
+        <button id="addBookmarkBtn" class="px-3 py-1 md:px-4 md:py-2 bg-gray-300 rounded text-sm md:text-base">Add Bookmark</button>
+        <button id="themeToggleBtn" class="px-3 py-1 md:px-4 md:py-2 bg-gray-300 rounded text-sm md:text-base">Theme</button>
+      </div>
+    </header>
+
+    <main id="categories" class="space-y-4 md:space-y-6"></main>
+
+    <div id="modal" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 hidden">
+      <div class="bg-white p-4 md:p-6 rounded shadow-md max-w-sm w-full">
+        <h2 id="modalTitle" class="text-lg font-semibold mb-2 md:mb-4">Add/Edit Bookmark</h2>
+        <form id="bookmarkForm" class="space-y-3 md:space-y-4">
+          <input type="text" id="bookmarkName" placeholder="Bookmark Name" class="w-full px-3 py-2 border border-gray-300 rounded text-sm md:text-base" required />
+          <input type="url" id="bookmarkURL" placeholder="Bookmark URL" class="w-full px-3 py-2 border border-gray-300 rounded text-sm md:text-base" required />
+          <input type="text" id="bookmarkCategory" placeholder="Category" class="w-full px-3 py-2 border border-gray-300 rounded text-sm md:text-base" />
+          <div class="flex justify-end space-x-2">
+            <button type="button" id="cancelBtn" class="px-3 py-1 bg-gray-300 rounded text-sm md:text-base">Cancel</button>
+            <button type="submit" class="px-3 py-1 bg-blue-500 text-white rounded text-sm md:text-base">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const categoriesContainer = document.getElementById('categories');
+    const modal = document.getElementById('modal');
+    const addBookmarkBtn = document.getElementById('addBookmarkBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const bookmarkForm = document.getElementById('bookmarkForm');
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+
+    let bookmarks = JSON.parse(localStorage.getItem('bookmarks')) || [];
+    let editingIndex = null;
+
+    // Theme Toggle
+    themeToggleBtn.addEventListener('click', () => {
+      const currentTheme = document.body.getAttribute('data-theme');
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+      document.body.setAttribute('data-theme', newTheme);
+    });
+
+    // Show Modal
+    addBookmarkBtn.addEventListener('click', () => {
+      editingIndex = null;
+      bookmarkForm.reset();
+      modal.classList.remove('hidden');
+    });
+
+    // Hide Modal
+    cancelBtn.addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+
+    // Add/Edit Bookmark
+    bookmarkForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('bookmarkName').value;
+      const url = document.getElementById('bookmarkURL').value;
+      const category = document.getElementById('bookmarkCategory').value;
+
+      if (editingIndex !== null) {
+        bookmarks[editingIndex] = { name, url, category };
+      } else {
+        bookmarks.push({ name, url, category });
+      }
+
+      saveBookmarks();
+      renderBookmarks();
+      modal.classList.add('hidden');
+    });
+
+    // Save Bookmarks to Local Storage
+    function saveBookmarks() {
+      localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+    }
+
+    // Render Bookmarks
+    function renderBookmarks() {
+      categoriesContainer.innerHTML = '';
+      const categories = [...new Set(bookmarks.map(b => b.category || 'Uncategorized'))];
+
+      categories.forEach(category => {
+        const categoryDiv = document.createElement('div');
+        categoryDiv.innerHTML = `
+          <h2 class="text-md font-semibold md:text-lg">${category}</h2>
+          <div class="grid grid-cols-1 gap-3 md:gap-4 md:grid-cols-2 lg:grid-cols-3" id="category-${category}"></div>
+        `;
+        categoriesContainer.appendChild(categoryDiv);
+
+        const categoryContainer = document.getElementById(`category-${category}`);
+        bookmarks.filter(b => b.category === category).forEach((bookmark, index) => {
+          const bookmarkItem = document.createElement('div');
+          bookmarkItem.classList.add('p-3', 'bg-white', 'rounded', 'shadow-md', 'flex', 'justify-between', 'items-center', 'text-sm', 'md:text-base');
+          bookmarkItem.innerHTML = `
+            <div class="flex items-center space-x-3">
+              <img src="https://www.google.com/s2/favicons?domain=${bookmark.url}" alt="favicon" class="w-5 h-5 md:w-6 md:h-6" />
+              <a href="${bookmark.url}" target="_blank" class="text-blue-500 font-medium truncate">${bookmark.name}</a>
+            </div>
+            <div class="dropdown">
+              <button class="px-2 py-1 bg-gray-300 rounded">...</button>
+              <div class="dropdown-content">
+                <button onclick="editBookmark(${index})">Edit</button>
+                <button onclick="moveBookmark(${index}, 'up')">Move Up</button>
+                <button onclick="moveBookmark(${index}, 'down')">Move Down</button>
+                <button onclick="deleteBookmark(${index})">Delete</button>
+              </div>
+            </div>
+          `;
+          categoryContainer.appendChild(bookmarkItem);
+        });
+      });
+    }
+
+    // Edit Bookmark
+    function editBookmark(index) {
+      editingIndex = index;
+      const bookmark = bookmarks[index];
+      document.getElementById('bookmarkName').value = bookmark.name;
+      document.getElementById('bookmarkURL').value = bookmark.url;
+      document.getElementById('bookmarkCategory').value = bookmark.category;
+      modal.classList.remove('hidden');
+    }
+
+    // Move Bookmark
+    function moveBookmark(index, direction) {
+      if (direction === 'up' && index > 0) {
+        [bookmarks[index], bookmarks[index - 1]] = [bookmarks[index - 1], bookmarks[index]];
+      } else if (direction === 'down' && index < bookmarks.length - 1) {
+        [bookmarks[index], bookmarks[index + 1]] = [bookmarks[index + 1], bookmarks[index]];
+      }
+      saveBookmarks();
+      renderBookmarks();
+    }
+
+    // Delete Bookmark
+    function deleteBookmark(index) {
+      bookmarks.splice(index, 1);
+      saveBookmarks();
+      renderBookmarks();
+    }
+
+    // Initial Render
+    renderBookmarks();
+  </script>
+</body>
+</html>
