@@ -90,7 +90,8 @@ The **Bookmark Manager** is a lightweight, responsive, and visually appealing we
 
 ### Live Demo
 
-- [Live Demo](https://bookmark-manager-arafath.netlify.app/)
+- [Live Demo in Netlify](https://bookmark-manager-arafath.netlify.app/)
+- [Live Demo in Github Pages](https://muhammadyeasinarafath.github.io/Bookmarke-Manager-WebApp/)
 
 1. **Download the Code:**
 
